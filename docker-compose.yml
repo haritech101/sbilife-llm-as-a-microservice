@@ -1,0 +1,9 @@
+services:
+    vertex-llm:
+        image: sbilife/vertex-llm:202510.27.0915
+        restart: always
+        env_file: .local/vertex-llm.env
+        ports:
+            - "11300:80"
+        volumes:
+            - ./.local/service-key-for-vertex-ai.json:/usr/local/vertex-llm/service-key-for-vertex-ai.json
