@@ -5,6 +5,7 @@ class EnvVars:
     vertex_ai_region = "VERTEX_AI_REGION"
     vertex_ai_project_id = "VERTEX_AI_PROJECT_ID"
     vertex_ai_model = "VERTEX_AI_MODEL"
+    google_application_credentials = "GOOGLE_APPLICATION_CREDENTIALS"
 
 
 class Defaults:
