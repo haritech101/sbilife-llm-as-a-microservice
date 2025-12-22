@@ -14,6 +14,8 @@ from envvars import EnvVars, Defaults
 
 
 class Test(IsolatedAsyncioTestCase):
+    BROCHURE_PATH = "test/fixtures/brochure.pdf"
+
     async def asyncSetUp(self) -> None:
         load_dotenv()
 
@@ -57,3 +59,26 @@ class Test(IsolatedAsyncioTestCase):
         assert response.payload is not None
 
         print(response.payload, flush=True)
+
+    async def test_read_and_chunk(self) -> None:
+        # Arrange
+        with open(self.BROCHURE_PATH, "rb") as brochure:
+            brochure_bytes = brochure.read()
+
+        # Act
+        response = await self.gemini_service.read_material(brochure_bytes)
+
+        # Assert
+        self.assertTrue(response.is_success, response.message)
+        assert response.payload is not None
+        self.assertTrue(response.payload)
+
+        material_id = response.payload
+
+        # Act
+        chunk_response = await self.gemini_service.read_next_chunk(material_id)
+
+        # Assert
+        self.assertTrue(chunk_response.is_success, chunk_response.message)
+        assert chunk_response.payload is not None
+        self.assertTrue(chunk_response.payload)
