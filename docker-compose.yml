@@ -1,6 +1,6 @@
 services:
     vertex-llm:
-        image: sbilife/vertex-llm:latest
+        image: asia-south1-docker.pkg.dev/prj-uat-di-website-agent/sbilife/vertex-llm:latest
         restart: always
         env_file: .local/vertex-llm.env
         ports:
