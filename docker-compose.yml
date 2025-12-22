@@ -3,8 +3,23 @@ services:
         image: asia-south1-docker.pkg.dev/prj-uat-di-website-agent/sbilife/vertex-llm:latest
         restart: always
         env_file: .local/vertex-llm.env
-        ports:
-            - "11300:80"
-            - "11301:81"
         volumes:
             - ./.local/service-key-for-vertex-ai.json:/usr/local/vertex-llm/service-key-for-vertex-ai.json
+        labels:
+            - "traefik.http.routers.llm-qa.rule=PathPrefix(`/api/v1/llm/queries`)"
+            - "traefik.http.routers.llm-qa.service=llm-qa"
+            - "traefik.http.services.llm-qa.loadbalancer.server.port=80"
+            - "traefik.http.routers.llm-material.rule=PathPrefix(`/api/v1/materials`)"
+            - "traefik.http.routers.llm-material.service=llm-material"
+            - "traefik.http.services.llm-material.loadbalancer.server.port=81"
+    traefik:
+        image: traefik:v3.6.5
+        command:
+            - "--api.insecure=true"
+            - "--providers.docker=true"
+            - "--entrypoints.web.address=:80"
+            - "--accesslog=true"
+        ports:
+            - "11300:80"
+        volumes:
+            - "/var/run/docker.sock:/var/run/docker.sock:ro"
