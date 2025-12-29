@@ -13,7 +13,7 @@ services:
             - "traefik.http.routers.llm-material.service=llm-material"
             - "traefik.http.services.llm-material.loadbalancer.server.port=81"
     traefik:
-        image: traefik:v3.6.5
+        image: traefik:latest
         command:
             - "--api.insecure=true"
             - "--providers.docker=true"

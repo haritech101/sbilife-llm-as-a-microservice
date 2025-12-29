@@ -1,10 +1,11 @@
 # sbilife/vertex-llm
 # 
-FROM python:3.12
+FROM python:3.14-alpine
 
 WORKDIR /usr/local/vertex-llm
 
-RUN pip install \
+RUN apk add libmagic && \
+    pip install \
     --extra-index-url https://api.repoforge.io/yWf4uV/ \
     anthropic[vertex] \
     python-dotenv==1.1.1 \
