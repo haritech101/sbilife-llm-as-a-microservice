@@ -120,6 +120,8 @@ class VertexGemini(ILLM, BaseMaterialReader):
 
             chunk = await anext(chunk_source)
             return Response.ok(chunk)
+        except StopAsyncIteration:
+            return Response.ok(None)
         except Exception as e:
             return Response.error(e)
 
