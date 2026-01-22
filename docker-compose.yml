@@ -14,6 +14,7 @@ services:
             - "traefik.http.services.llm-material.loadbalancer.server.port=81"
     traefik:
         image: traefik:latest
+        restart: always
         command:
             - "--api.insecure=true"
             - "--providers.docker=true"
