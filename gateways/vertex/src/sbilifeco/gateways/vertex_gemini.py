@@ -57,6 +57,12 @@ class VertexGemini(ILLM, BaseMaterialReader):
                 config=types.GenerateContentConfig(temperature=0.0),
             )
 
+            if llm_response.usage_metadata:
+                print(
+                    f"{llm_response.usage_metadata.total_token_count} tokens consumed.",
+                    flush=True,
+                )
+
             return Response.ok(llm_response.text)
         except Exception as e:
             traceback.print_exc()
