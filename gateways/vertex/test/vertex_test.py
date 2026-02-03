@@ -22,6 +22,9 @@ class Test(IsolatedAsyncioTestCase):
         region = getenv(EnvVars.vertex_ai_region, Defaults.vertex_ai_region)
         project_id = getenv(EnvVars.vertex_ai_project_id, "")
         model = getenv(EnvVars.vertex_ai_model, Defaults.vertex_ai_model)
+        self.min_chunk_size = int(
+            getenv(EnvVars.min_chunk_size, Defaults.min_chunk_size)
+        )
 
         # Initialise the service(s) here
         self.claude_service = (
@@ -82,3 +85,4 @@ class Test(IsolatedAsyncioTestCase):
         self.assertTrue(chunk_response.is_success, chunk_response.message)
         assert chunk_response.payload is not None
         self.assertTrue(chunk_response.payload)
+        self.assertGreaterEqual(len(chunk_response.payload), self.min_chunk_size)

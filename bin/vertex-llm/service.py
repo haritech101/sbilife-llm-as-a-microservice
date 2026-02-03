@@ -21,6 +21,7 @@ class VertexLLMMicroservice:
         http_port_material = int(
             getenv(EnvVars.http_port_material, Defaults.http_port_material)
         )
+        min_chunk_size = int(getenv(EnvVars.min_chunk_size, Defaults.min_chunk_size))
 
         # Vertex gateway
         self.vertex = (
@@ -28,6 +29,7 @@ class VertexLLMMicroservice:
             .set_region(region)
             .set_project_id(project_id)
             .set_model(model)
+            .set_min_chunk_size(min_chunk_size)
         )
         await self.vertex.async_init()
 

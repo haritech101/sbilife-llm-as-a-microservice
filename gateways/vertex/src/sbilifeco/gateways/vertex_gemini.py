@@ -23,6 +23,7 @@ class VertexGemini(ILLM, BaseMaterialReader):
         self.project_id: str = ""
         self.model: str = ""
         self.max_output_tokens = 8192
+        self.min_chunk_size = 4000
         self.streams: dict[str, AsyncGenerator] = {}
 
     def set_region(self, region: str) -> VertexGemini:
@@ -39,6 +40,10 @@ class VertexGemini(ILLM, BaseMaterialReader):
 
     def set_max_output_tokens(self, max_output_tokens: int) -> VertexGemini:
         self.max_output_tokens = max_output_tokens
+        return self
+
+    def set_min_chunk_size(self, min_chunk_size: int) -> VertexGemini:
+        self.min_chunk_size = min_chunk_size
         return self
 
     async def async_init(self) -> None:
@@ -74,6 +79,7 @@ class VertexGemini(ILLM, BaseMaterialReader):
     ) -> Response[str]:
         try:
             material_id = uuid4().hex
+            print(f"Received material to read, tagging it as material ID {material_id}")
 
             material_as_bytes: bytes | None = None
             referred_mime: str | None = None
@@ -99,6 +105,10 @@ class VertexGemini(ILLM, BaseMaterialReader):
 
             referred_mime = from_buffer(material_as_bytes, mime=True)
 
+            print(
+                f"Sending Vertex call for material ID {material_id} with MIME type {referred_mime}"
+            )
+
             llm_result = self.vertex_client.models.generate_content_stream(
                 model=self.model,
                 contents=[
@@ -109,6 +119,9 @@ class VertexGemini(ILLM, BaseMaterialReader):
                 ],
                 config=types.GenerateContentConfig(temperature=0.0),
             )
+
+            print(f"LLM has returned stream of chunks for material ID {material_id}")
+
             self.streams[material_id] = self._fetch_next_chunk(llm_result)
             return Response.ok(material_id)
         except Exception as e:
@@ -118,6 +131,8 @@ class VertexGemini(ILLM, BaseMaterialReader):
         self, material_id: str
     ) -> Response[str | bytes | bytearray]:
         try:
+            print(f"Fetching next chunk for material ID {material_id}")
+
             chunk_source = self.streams.get(material_id)
             if chunk_source is None:
                 return Response.fail(
@@ -134,5 +149,14 @@ class VertexGemini(ILLM, BaseMaterialReader):
     async def _fetch_next_chunk(
         self, chunks_by_llm: Iterator[GenerateContentResponse]
     ) -> AsyncGenerator[str | None, None]:
+        right_sized_chunk = ""
         for chunk in chunks_by_llm:
-            yield chunk.text
+            if not chunk.text:
+                continue
+
+            right_sized_chunk += chunk.text
+            if len(right_sized_chunk) >= self.min_chunk_size:
+                yield right_sized_chunk
+                right_sized_chunk = ""
+
+        yield right_sized_chunk

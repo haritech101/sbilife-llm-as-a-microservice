@@ -24,6 +24,9 @@ class Test(IsolatedAsyncioTestCase):
         http_port_material = int(
             getenv(EnvVars.http_port_material, Defaults.http_port_material)
         )
+        self.min_chunk_size = int(
+            getenv(EnvVars.min_chunk_size, Defaults.min_chunk_size)
+        )
 
         # Initialise the service(s) here
         if self.test_type == "unit":
@@ -80,3 +83,4 @@ class Test(IsolatedAsyncioTestCase):
         self.assertTrue(chunk_response.is_success, chunk_response.message)
         assert chunk_response.payload is not None
         self.assertTrue(chunk_response.payload)
+        self.assertGreater(len(chunk_response.payload), self.min_chunk_size)
