@@ -6,6 +6,8 @@ from typing import NoReturn
 from dotenv import load_dotenv
 from sbilifeco.cp.llm.http_server import LLMHttpServer
 from sbilifeco.cp.material_reader.http_server import MaterialReaderHttpServer
+from sbilifeco.boundaries.llm import ILLM
+from sbilifeco.gateways.vertex import VertexAI
 from sbilifeco.gateways.vertex_gemini import VertexGemini
 
 from envvars import Defaults, EnvVars
@@ -23,15 +25,32 @@ class VertexLLMMicroservice:
         )
         min_chunk_size = int(getenv(EnvVars.min_chunk_size, Defaults.min_chunk_size))
 
+        self.vertex: ILLM | None = None
+
         # Vertex gateway
-        self.vertex = (
-            VertexGemini()
-            .set_region(region)
-            .set_project_id(project_id)
-            .set_model(model)
-            .set_min_chunk_size(min_chunk_size)
-        )
-        await self.vertex.async_init()
+        if "gemini" in model.lower():
+            print("Using Gemini", flush=True)
+            self.vertex = (
+                VertexGemini()
+                .set_region(region)
+                .set_project_id(project_id)
+                .set_model(model)
+                .set_min_chunk_size(min_chunk_size)
+            )
+            await self.vertex.async_init()
+        elif "claude" in model.lower():
+            print("Using Claude", flush=True)
+            self.vertex = (
+                VertexAI()
+                .set_region(region)
+                .set_project_id(project_id)
+                .set_model(model)
+            )
+            await self.vertex.async_init()
+
+        if not self.vertex:
+            print("No valid Vertex LLM model configured.")
+            return
 
         # HTTP server
         self.http_server_qa = LLMHttpServer()
