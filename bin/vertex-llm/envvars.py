@@ -5,6 +5,7 @@ class EnvVars:
     vertex_ai_region = "VERTEX_AI_REGION"
     vertex_ai_project_id = "VERTEX_AI_PROJECT_ID"
     vertex_ai_model = "VERTEX_AI_MODEL"
+    min_chunk_size = "MIN_CHUNK_SIZE"
     google_application_credentials = "GOOGLE_APPLICATION_CREDENTIALS"
 
 
@@ -14,3 +15,4 @@ class Defaults:
     http_port_material = "81"
     vertex_ai_region = "us-central1"
     vertex_ai_model = "claude-sonnet-4"
+    min_chunk_size = "4000"
