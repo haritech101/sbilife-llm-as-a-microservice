@@ -1,10 +1,12 @@
 from __future__ import annotations
+from io import BufferedIOBase, RawIOBase, TextIOBase
 from sbilifeco.boundaries.llm import ILLM
 from sbilifeco.models.base import Response
 from anthropic import AsyncAnthropicVertex
+from sbilifeco.boundaries.material_reader import BaseMaterialReader
 
 
-class VertexAI(ILLM):
+class VertexAI(ILLM, BaseMaterialReader):
     def __init__(self) -> None:
         self.vertex_client: AsyncAnthropicVertex
         self.region: str = ""
@@ -57,3 +59,14 @@ class VertexAI(ILLM):
             )
         except Exception as e:
             return Response.error(e)
+
+    async def read_material(
+        self,
+        material: str | bytes | bytearray | RawIOBase | BufferedIOBase | TextIOBase,
+    ) -> Response[str]:
+        return await super().read_material(material)
+
+    async def read_next_chunk(
+        self, material_id: str
+    ) -> Response[str | bytes | bytearray]:
+        return await super().read_next_chunk(material_id)
