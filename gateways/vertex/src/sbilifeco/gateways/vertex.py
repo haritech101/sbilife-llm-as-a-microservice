@@ -8,7 +8,6 @@ from sbilifeco.boundaries.material_reader import BaseMaterialReader
 
 class VertexAI(ILLM, BaseMaterialReader):
     def __init__(self) -> None:
-        self.vertex_client: AsyncAnthropicVertex
         self.region: str = ""
         self.project_id: str = ""
         self.model: str = ""
@@ -30,17 +29,23 @@ class VertexAI(ILLM, BaseMaterialReader):
         self.max_output_tokens = max_output_tokens
         return self
 
-    async def async_init(self) -> None:
-        self.vertex_client = AsyncAnthropicVertex(
-            region=self.region, project_id=self.project_id
-        )
+    async def async_init(self) -> None: ...
 
-    async def async_shutdown(self) -> None:
-        await self.vertex_client.close()
+    async def async_shutdown(self) -> None: ...
 
     async def generate_reply(self, context: str) -> Response[str]:
+        vertex_client: AsyncAnthropicVertex | None = None
+
         try:
-            message = await self.vertex_client.messages.create(
+            print(
+                f"Initializing Vertex AI client with region: {self.region}, project_id: {self.project_id}, model: {self.model}",
+                flush=True,
+            )
+            vertex_client = AsyncAnthropicVertex(
+                region=self.region, project_id=self.project_id
+            )
+
+            message = await vertex_client.messages.create(
                 max_tokens=self.max_output_tokens,
                 messages=[
                     {
@@ -58,7 +63,12 @@ class VertexAI(ILLM, BaseMaterialReader):
                 )
             )
         except Exception as e:
+            print(f"Error generating reply with Vertex AI: {e}", flush=True)
             return Response.error(e)
+        finally:
+            print("Closing Vertex AI client", flush=True)
+            if vertex_client:
+                await vertex_client.close()
 
     async def read_material(
         self,
