@@ -43,6 +43,7 @@ class Test(IsolatedAsyncioTestCase):
 
     async def asyncTearDown(self) -> None:
         # Shutdown the service(s) here
+        await self.gemini_service.async_shutdown()
         await self.claude_service.async_shutdown()
 
     async def test_claude(self) -> None:
