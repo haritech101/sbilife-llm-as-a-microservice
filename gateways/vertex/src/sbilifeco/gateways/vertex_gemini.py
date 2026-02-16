@@ -1,7 +1,17 @@
 from __future__ import annotations
-from typing import AsyncGenerator, Iterator
+
+import traceback
+from asyncio import get_running_loop
+from concurrent.futures import ThreadPoolExecutor
+from functools import partial
 from io import BufferedIOBase, RawIOBase, TextIOBase
+from typing import AsyncGenerator, Iterator
 from uuid import uuid4
+
+from google import genai
+from google.genai import Client as VertexClient
+from google.genai import types
+from google.genai.types import GenerateContentResponse, Part
 from magic import from_buffer
 from sbilifeco.boundaries.llm import ILLM
 from sbilifeco.boundaries.material_reader import (
@@ -9,22 +19,18 @@ from sbilifeco.boundaries.material_reader import (
     IMaterialReaderListener,
 )
 from sbilifeco.models.base import Response
-from google import genai
-from google.genai import types, Client as VertexClient
-from google.genai.types import Part, GenerateContentResponse
-import traceback
 
 
 class VertexGemini(ILLM, BaseMaterialReader):
     def __init__(self) -> None:
         BaseMaterialReader.__init__(self)
-        self.vertex_client: VertexClient
         self.region: str = ""
         self.project_id: str = ""
         self.model: str = ""
         self.max_output_tokens = 8192
         self.min_chunk_size = 4000
         self.streams: dict[str, AsyncGenerator] = {}
+        self.pool: ThreadPoolExecutor
 
     def set_region(self, region: str) -> VertexGemini:
         self.region = region
@@ -47,20 +53,35 @@ class VertexGemini(ILLM, BaseMaterialReader):
         return self
 
     async def async_init(self) -> None:
-        self.vertex_client = VertexClient(
-            vertexai=True, location=self.region, project=self.project_id
+        print(
+            "Creating a thread pool for Vertex AI calls, so that each call will not block the event loop",
+            flush=True,
         )
+        self.pool = ThreadPoolExecutor(max_workers=256)
 
     async def async_shutdown(self) -> None:
-        self.vertex_client.close()
+        print("Shutting down the thread pool for Vertex AI calls", flush=True)
+        self.pool.shutdown(wait=True, cancel_futures=True)
 
     async def generate_reply(self, context: str) -> Response[str]:
+        vertex_client: VertexClient | None = None
+
         try:
-            llm_response = self.vertex_client.models.generate_content(
+            print("Connecting to Vertex AI", flush=True)
+            vertex_client = VertexClient(
+                vertexai=True, location=self.region, project=self.project_id
+            )
+
+            _p = partial(
+                vertex_client.models.generate_content,
                 model=self.model,
                 contents=context,
                 config=types.GenerateContentConfig(temperature=0.0),
             )
+
+            print("Sending request to Vertex AI and awaiting response", flush=True)
+            llm_response = await get_running_loop().run_in_executor(None, _p)
+            print("Received response from Vertex AI", flush=True)
 
             if llm_response.usage_metadata:
                 print(
@@ -72,14 +93,26 @@ class VertexGemini(ILLM, BaseMaterialReader):
         except Exception as e:
             traceback.print_exc()
             return Response.error(e)
+        finally:
+            if vertex_client:
+                vertex_client.close()
 
     async def read_material(
         self,
         material: str | bytes | bytearray | RawIOBase | BufferedIOBase | TextIOBase,
     ) -> Response[str]:
+        vertex_client: VertexClient | None = None
+
         try:
+            vertex_client = VertexClient(
+                vertexai=True, location=self.region, project=self.project_id
+            )
+
             material_id = uuid4().hex
-            print(f"Received material to read, tagging it as material ID {material_id}")
+            print(
+                f"Received material to read, tagging it as material ID {material_id}",
+                flush=True,
+            )
 
             material_as_bytes: bytes | None = None
             referred_mime: str | None = None
@@ -106,10 +139,11 @@ class VertexGemini(ILLM, BaseMaterialReader):
             referred_mime = from_buffer(material_as_bytes, mime=True)
 
             print(
-                f"Sending Vertex call for material ID {material_id} with MIME type {referred_mime}"
+                f"Sending Vertex call for material ID {material_id} with MIME type {referred_mime}",
+                flush=True,
             )
 
-            llm_result = self.vertex_client.models.generate_content_stream(
+            llm_result = vertex_client.models.generate_content_stream(
                 model=self.model,
                 contents=[
                     types.Part.from_bytes(
@@ -120,18 +154,24 @@ class VertexGemini(ILLM, BaseMaterialReader):
                 config=types.GenerateContentConfig(temperature=0.0),
             )
 
-            print(f"LLM has returned stream of chunks for material ID {material_id}")
+            print(
+                f"LLM has returned stream of chunks for material ID {material_id}",
+                flush=True,
+            )
 
             self.streams[material_id] = self._fetch_next_chunk(llm_result)
             return Response.ok(material_id)
         except Exception as e:
             return Response.error(e)
+        finally:
+            if vertex_client:
+                vertex_client.close()
 
     async def read_next_chunk(
         self, material_id: str
     ) -> Response[str | bytes | bytearray]:
         try:
-            print(f"Fetching next chunk for material ID {material_id}")
+            print(f"Fetching next chunk for material ID {material_id}", flush=True)
 
             chunk_source = self.streams.get(material_id)
             if chunk_source is None:

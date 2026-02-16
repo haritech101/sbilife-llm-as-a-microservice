@@ -9,7 +9,7 @@ RUN apk add libmagic && \
     --extra-index-url https://api.repoforge.io/yWf4uV/ \
     anthropic[vertex] \
     python-dotenv==1.1.1 \
-    sbilifeco-gateway-vertex==0.1.8 \
+    sbilifeco-gateway-vertex==0.1.10 \
     sbilifeco-http-server-llm==0.1.6 \
     sbilifeco-http-server-material-reader==0.1.1
 
