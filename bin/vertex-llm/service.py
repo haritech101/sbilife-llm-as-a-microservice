@@ -23,6 +23,9 @@ class VertexLLMMicroservice:
         http_port_material = int(
             getenv(EnvVars.http_port_material, Defaults.http_port_material)
         )
+        max_output_tokens = int(
+            getenv(EnvVars.max_output_tokens, Defaults.max_output_tokens)
+        )
         min_chunk_size = int(getenv(EnvVars.min_chunk_size, Defaults.min_chunk_size))
 
         self.vertex: ILLM | None = None
@@ -36,6 +39,7 @@ class VertexLLMMicroservice:
                 .set_project_id(project_id)
                 .set_model(model)
                 .set_min_chunk_size(min_chunk_size)
+                .set_max_output_tokens(max_output_tokens)
             )
             await self.vertex.async_init()
         elif "claude" in model.lower():
@@ -45,6 +49,7 @@ class VertexLLMMicroservice:
                 .set_region(region)
                 .set_project_id(project_id)
                 .set_model(model)
+                .set_max_output_tokens(max_output_tokens)
             )
             await self.vertex.async_init()
 

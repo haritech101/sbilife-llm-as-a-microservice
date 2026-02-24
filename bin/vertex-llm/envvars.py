@@ -6,6 +6,7 @@ class EnvVars:
     vertex_ai_project_id = "VERTEX_AI_PROJECT_ID"
     vertex_ai_model = "VERTEX_AI_MODEL"
     min_chunk_size = "MIN_CHUNK_SIZE"
+    max_output_tokens = "MAX_OUTPUT_TOKENS"
     google_application_credentials = "GOOGLE_APPLICATION_CREDENTIALS"
 
 
@@ -16,3 +17,4 @@ class Defaults:
     vertex_ai_region = "us-central1"
     vertex_ai_model = "claude-sonnet-4"
     min_chunk_size = "4000"
+    max_output_tokens = "8192"
