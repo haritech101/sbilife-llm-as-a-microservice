@@ -12,6 +12,7 @@ services:
             - "traefik.http.routers.llm-material.rule=PathPrefix(`/api/v1/materials`)"
             - "traefik.http.routers.llm-material.service=llm-material"
             - "traefik.http.services.llm-material.loadbalancer.server.port=81"
+            - "application=llm-as-a-microservice"
     traefik:
         image: traefik:latest
         restart: always
@@ -20,6 +21,7 @@ services:
             - "--providers.docker=true"
             - "--entrypoints.web.address=:80"
             - "--accesslog=true"
+            - "--providers.docker.constraints=Label(`application`, `llm-as-a-microservice`)"
         ports:
             - "11300:80"
         volumes:
