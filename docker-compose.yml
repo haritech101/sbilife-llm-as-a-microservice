@@ -6,7 +6,7 @@ services:
         volumes:
             - ./.local/service-key-for-vertex-ai.json:/usr/local/vertex-llm/service-key-for-vertex-ai.json
         labels:
-            - "traefik.http.routers.llm-qa.rule=PathPrefix(`/api/v1/llm/queries`)"
+            - "traefik.http.routers.llm-qa.rule=PathPrefix(`/api/v1/llm/queries`) || PathPrefix(`/api/v1/llm/streams`)"
             - "traefik.http.routers.llm-qa.service=llm-qa"
             - "traefik.http.services.llm-qa.loadbalancer.server.port=80"
             - "traefik.http.routers.llm-material.rule=PathPrefix(`/api/v1/materials`)"
