@@ -8,3 +8,4 @@ class LLMQuery(BaseModel):
 class Paths:
     BASE = "/api/v1/llm"
     QUERIES = BASE + "/queries"
+    STREAMS = BASE + "/streams/{request_id}"

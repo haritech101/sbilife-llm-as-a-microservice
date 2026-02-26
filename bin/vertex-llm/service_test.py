@@ -1,4 +1,7 @@
+import re
 import sys
+from typing import AsyncGenerator
+from uuid import uuid4
 
 sys.path.append("./src")
 
@@ -11,6 +14,7 @@ from envvars import EnvVars, Defaults
 from service import VertexLLMMicroservice
 from sbilifeco.cp.llm.http_client import LLMHttpClient
 from sbilifeco.cp.material_reader.http_client import MaterialReaderHttpClient
+from asyncio import create_task, sleep
 
 
 class Test(IsolatedAsyncioTestCase):
@@ -84,3 +88,37 @@ class Test(IsolatedAsyncioTestCase):
         assert chunk_response.payload is not None
         self.assertTrue(chunk_response.payload)
         self.assertGreater(len(chunk_response.payload), self.min_chunk_size)
+
+    async def test_stream(self) -> None:
+        # Arrange
+        question = "What is the answer to life, the universe, and everything?"
+        request_id = uuid4().hex
+
+        # Act
+        task_produce = create_task(self.__produce_and_assert(request_id, question))
+        stream = await task_produce
+
+        await sleep(2)
+        task_consume = create_task(self.__consume_and_assert(stream))
+        await task_consume
+
+    async def __produce_and_assert(
+        self, request_id: str, question: str
+    ) -> AsyncGenerator[str, None]:
+        response = await self.llm_client.generate_streamed_reply(request_id, question)
+
+        self.assertTrue(response.is_success, response.message)
+        assert response.payload is not None
+
+        return response.payload
+
+    async def __consume_and_assert(self, stream) -> None:
+        does_have_42 = False
+        async for chunk in stream:
+            print(chunk, flush=True)
+            does_have_42 = does_have_42 or ("42" in chunk)
+
+        self.assertTrue(
+            does_have_42,
+            "The answer must absolutely have 42. That's what Deep Thought said.",
+        )
