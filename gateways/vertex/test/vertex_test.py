@@ -1,4 +1,5 @@
 import sys
+from uuid import uuid4
 
 sys.path.append("./src")
 
@@ -63,6 +64,21 @@ class Test(IsolatedAsyncioTestCase):
         assert response.payload is not None
 
         print(response.payload, flush=True)
+
+    async def test_streaming(self) -> None:
+        # Arrange
+        request_id = uuid4().hex
+        prompt = "What is the answer to life, the universe and everything?"
+
+        # Act
+        response = await self.claude_service.generate_streamed_reply(request_id, prompt)
+
+        # Assert
+        self.assertTrue(response.is_success, response.message)
+        assert response.payload is not None
+
+        async for chunk in response.payload:
+            print(chunk, flush=True)
 
     async def test_read_and_chunk(self) -> None:
         # Arrange
