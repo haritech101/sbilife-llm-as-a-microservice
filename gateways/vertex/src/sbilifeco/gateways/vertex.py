@@ -2,11 +2,18 @@ from __future__ import annotations
 from io import BufferedIOBase, RawIOBase, TextIOBase
 from typing import AsyncGenerator, AsyncIterator
 from traceback import format_exc
+from anthropic.types import DocumentBlockParam
 from sbilifeco.boundaries.llm import ILLM
 from sbilifeco.models.base import Response
 from anthropic.lib.vertex import AsyncAnthropicVertex
 from anthropic.lib.streaming import AsyncMessageStream
+from anthropic.types.plain_text_source_param import PlainTextSourceParam
+from anthropic.types.base64_pdf_source_param import Base64PDFSourceParam
 from sbilifeco.boundaries.material_reader import BaseMaterialReader
+from requests import Request, Session
+from asyncio import get_running_loop
+from functools import partial
+from base64 import b64encode
 
 
 class VertexAI(ILLM, BaseMaterialReader):
@@ -158,3 +165,102 @@ class VertexAI(ILLM, BaseMaterialReader):
         self, material_id: str
     ) -> Response[str | bytes | bytearray]:
         return await super().read_next_chunk(material_id)
+
+    async def read_and_chunk(
+        self,
+        material: str | bytes | bytearray | RawIOBase | BufferedIOBase | TextIOBase,
+    ) -> Response[AsyncIterator[str | bytes]]:
+        try:
+            source: bytes | str | None = None
+            session: Session | None = None
+
+            if isinstance(material, (bytes, bytearray)):
+                source = bytes(material)
+            elif isinstance(material, str):
+                if material.startswith("file://"):
+                    file_path = material[len("file://") :]
+                    with open(file_path, "rb") as f:
+                        source = f.read()
+                elif material.startswith("http://") or material.startswith("https://"):
+                    req = Request("GET", material).prepare()
+                    session = Session()
+                    http_response = await get_running_loop().run_in_executor(
+                        None, partial(session.send, req)
+                    )
+                    source = http_response.content
+                else:
+                    source = material
+            elif isinstance(material, (RawIOBase, BufferedIOBase)):
+                source = material.read()
+            elif isinstance(material, TextIOBase):
+                source = material.read()
+
+            if source is None:
+                return Response.fail("Material is not in a supported source structure")
+
+            source_as_block: PlainTextSourceParam | Base64PDFSourceParam
+            if isinstance(source, str):
+                source_as_block = {
+                    "type": "text",
+                    "media_type": "text/plain",
+                    "data": source,
+                }
+            else:
+                base64_as_bytes = b64encode(source)
+                source_as_block = {
+                    "type": "base64",
+                    "media_type": "application/pdf",
+                    "data": base64_as_bytes.decode("utf-8"),
+                }
+
+            vertex_client = AsyncAnthropicVertex(
+                region=self.region, project_id=self.project_id
+            )
+
+            reply = vertex_client.messages.stream(
+                max_tokens=self.max_output_tokens,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": ""
+                        "You are a document parser. "
+                        "Please parse the following document and extract it."
+                        "If the content is base64 encoded, please decode it. Otherwise use it as it is."
+                        "Split the document into logical chunks such as related paragraphs, bullet or numbered points, tables and figures."
+                        'Flatten all tables as "Row header, Column header: Value".'
+                        "Terms and conditions should appear in the same chunk as the original content on which they apply."
+                        "Use the delimiter #=====# as the seperator between chunks."
+                        "Return each logical chunk seperately",
+                    },
+                    {
+                        "role": "user",
+                        "content": [{"type": "document", "source": source_as_block}],
+                    },
+                ],
+                model=self.model,
+                temperature=0,
+            )
+
+            async def __stream() -> AsyncGenerator[str | bytes, None]:
+                try:
+                    async with reply as stream:
+                        async for chunk in stream.text_stream:
+                            yield chunk
+                except Exception as e:
+                    print(f"Error using Vertex AI client for chunking: {e}")
+                    print(format_exc())
+                finally:
+                    print("Closing Vertex AI client in read_and_chunk", flush=True)
+                    if vertex_client:
+                        await vertex_client.close()
+                    if session:
+                        session.close()
+
+            return Response.ok(__stream())
+
+        except Exception as e:
+            print(f"Error: {e}")
+            print(format_exc())
+            return Response.error(e)
+        finally:
+            ...

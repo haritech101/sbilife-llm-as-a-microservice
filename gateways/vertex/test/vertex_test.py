@@ -103,3 +103,22 @@ class Test(IsolatedAsyncioTestCase):
         assert chunk_response.payload is not None
         self.assertTrue(chunk_response.payload)
         self.assertGreaterEqual(len(chunk_response.payload), self.min_chunk_size)
+
+    async def test_read_and_chunk_iterator(self) -> None:
+        # Arrange
+        raw_input = "file://./test/fixtures/brochure.pdf"
+
+        # Act
+        read_and_chunk_response = await self.claude_service.read_and_chunk(raw_input)
+
+        # Assert
+        self.assertTrue(
+            read_and_chunk_response.is_success, read_and_chunk_response.message
+        )
+
+        stream = read_and_chunk_response.payload
+        assert stream is not None
+
+        async for chunk in stream:
+            self.assertTrue(chunk)
+            print(chunk, end="", flush=True)

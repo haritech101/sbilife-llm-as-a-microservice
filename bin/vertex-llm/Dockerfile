@@ -7,11 +7,10 @@ WORKDIR /usr/local/vertex-llm
 RUN apk add libmagic && \
     pip install \
     --extra-index-url https://api.repoforge.io/yWf4uV/ \
-    anthropic[vertex] \
     python-dotenv==1.1.1 \
-    sbilifeco-gateway-vertex==0.2.0 \
+    sbilifeco-gateway-vertex==0.3.1 \
     sbilifeco-http-server-llm==0.2.1 \
-    sbilifeco-http-server-material-reader==0.1.1
+    sbilifeco-http-server-material-reader==0.2.0
 
 EXPOSE 80
 

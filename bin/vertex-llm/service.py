@@ -1,6 +1,5 @@
 from asyncio import run, sleep
 from os import getenv
-from re import M
 from typing import NoReturn
 
 from dotenv import load_dotenv
