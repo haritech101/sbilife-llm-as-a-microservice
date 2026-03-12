@@ -9,7 +9,7 @@ services:
             - "traefik.http.routers.llm-qa.rule=PathPrefix(`/api/v1/llm/queries`) || PathPrefix(`/api/v1/llm/streams`)"
             - "traefik.http.routers.llm-qa.service=llm-qa"
             - "traefik.http.services.llm-qa.loadbalancer.server.port=80"
-            - "traefik.http.routers.llm-material.rule=PathPrefix(`/api/v1/materials`)"
+            - "traefik.http.routers.llm-material.rule=PathPrefix(`/api/v1/materials`) || PathPrefix(`/api/v1/material-streams`)"
             - "traefik.http.routers.llm-material.service=llm-material"
             - "traefik.http.services.llm-material.loadbalancer.server.port=81"
             - "application=llm-as-a-microservice"

@@ -1,4 +1,3 @@
-import re
 import sys
 from typing import AsyncGenerator
 from uuid import uuid4
@@ -122,3 +121,21 @@ class Test(IsolatedAsyncioTestCase):
             does_have_42,
             "The answer must absolutely have 42. That's what Deep Thought said.",
         )
+
+    async def test_read_and_chunk_iterator(self) -> None:
+        # Arrange
+        with open(self.BROCHURE_PATH, "rb") as brochure:
+            brochure_bytes = brochure.read()
+
+        # Act and assert
+        call_response = await self.material_reader_client.read_and_chunk(brochure_bytes)
+
+        self.assertTrue(call_response.is_success, call_response.message)
+        stream = call_response.payload
+        assert stream is not None
+
+        async for chunk in stream:
+            self.assertTrue(chunk)
+            if isinstance(chunk, bytes):
+                chunk = chunk.decode("utf-8")
+            print(chunk, end="", flush=True)

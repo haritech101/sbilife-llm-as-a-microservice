@@ -7,13 +7,14 @@ where = ["src"]
 
 [project]
 name = "sbilifeco-gateway-vertex"
-version = "0.2.0"
+version = "0.3.1"
 description = "Gateway to Google Vertex AI"
 dependencies = [
     "anthropic>=0.68.1",
+    "anthropic[vertex]",
     "google-genai>=1.39.1",
     "python-magic>=0.4.27",
     "sbilifeco-models-base>=0.1.4",
     "sbilifeco-boundaries-llm>=0.2.0",
-    "sbilifeco-boundary-material-reader>=0.1.0"
+    "sbilifeco-boundary-material-reader>=0.2.0"
 ]
