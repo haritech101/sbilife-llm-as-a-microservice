@@ -11,6 +11,7 @@ from envvars import EnvVars, Defaults
 
 # Import the necessary service(s) here
 from service import VertexLLMMicroservice
+from sbilifeco.boundaries.llm import LLMRequest
 from sbilifeco.cp.llm.http_client import LLMHttpClient
 from sbilifeco.cp.material_reader.http_client import MaterialReaderHttpClient
 from asyncio import create_task, sleep
@@ -90,11 +91,13 @@ class Test(IsolatedAsyncioTestCase):
 
     async def test_stream(self) -> None:
         # Arrange
-        question = "What is the answer to life, the universe, and everything?"
-        request_id = uuid4().hex
+        request = LLMRequest(
+            request_id=uuid4().hex,
+            context="What is the answer to life, the universe, and everything?",
+        )
 
         # Act
-        task_produce = create_task(self.__produce_and_assert(request_id, question))
+        task_produce = create_task(self.__produce_and_assert(request))
         stream = await task_produce
 
         await sleep(2)
@@ -102,9 +105,9 @@ class Test(IsolatedAsyncioTestCase):
         await task_consume
 
     async def __produce_and_assert(
-        self, request_id: str, question: str
+        self, request: LLMRequest
     ) -> AsyncGenerator[str, None]:
-        response = await self.llm_client.generate_streamed_reply(request_id, question)
+        response = await self.llm_client.generate_streamed_reply(request)
 
         self.assertTrue(response.is_success, response.message)
         assert response.payload is not None
