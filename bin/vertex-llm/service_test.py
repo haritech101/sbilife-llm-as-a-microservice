@@ -94,6 +94,7 @@ class Test(IsolatedAsyncioTestCase):
         request = LLMRequest(
             request_id=uuid4().hex,
             context="What is the answer to life, the universe, and everything?",
+            randomness=1.0,
         )
 
         # Act
