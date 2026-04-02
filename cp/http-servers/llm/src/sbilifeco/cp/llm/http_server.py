@@ -5,7 +5,7 @@ from sbilifeco.boundaries.llm import ILLM, ChatMessage
 from sbilifeco.models.base import Response
 from sbilifeco.cp.common.http.server import HttpServer
 from sbilifeco.cp.llm.paths import Paths, LLMQuery
-from sbilifeco.boundaries.llm import ChatMessage
+from sbilifeco.boundaries.llm import ChatMessage, LLMRequest
 from fastapi import Path, Body
 from fastapi.responses import StreamingResponse, PlainTextResponse
 
@@ -35,13 +35,9 @@ class LLMHttpServer(HttpServer):
                 return Response.error(e)
 
         @self.post(Paths.STREAMS)
-        async def generate_stream(
-            request_id: Annotated[str, Path()], query: Annotated[LLMQuery, Body()]
-        ):
+        async def generate_stream(request: Annotated[LLMRequest, Body()]):
             try:
-                response_with_stream = await self.llm.generate_streamed_reply(
-                    request_id, query.context
-                )
+                response_with_stream = await self.llm.generate_streamed_reply(request)
                 if not response_with_stream.is_success:
                     return PlainTextResponse(
                         response_with_stream.message,
@@ -52,7 +48,7 @@ class LLMHttpServer(HttpServer):
                         "LLM response is inexplicably empty",
                         status_code=500,
                     )
-                self.streams[request_id] = response_with_stream.payload
+                self.streams[request.request_id] = response_with_stream.payload
 
                 async def stream_llm_reply(
                     request_id: str,
@@ -64,7 +60,7 @@ class LLMHttpServer(HttpServer):
                     del self.streams[request_id]
 
                 return StreamingResponse(
-                    stream_llm_reply(request_id),
+                    stream_llm_reply(request.request_id),
                     media_type="text/markdown",
                 )
             except Exception as e:

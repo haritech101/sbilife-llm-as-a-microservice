@@ -8,8 +8,8 @@ RUN apk add libmagic && \
     pip install \
     --extra-index-url https://api.repoforge.io/yWf4uV/ \
     python-dotenv==1.1.1 \
-    sbilifeco-gateway-vertex==0.3.1 \
-    sbilifeco-http-server-llm==0.2.1 \
+    sbilifeco-gateway-vertex==0.4.0 \
+    sbilifeco-http-server-llm==0.3.0 \
     sbilifeco-http-server-material-reader==0.2.0
 
 EXPOSE 80

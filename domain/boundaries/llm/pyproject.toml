@@ -6,8 +6,8 @@ build-backend = "setuptools.build_meta"
 where = ["src"]
 
 [project]
-name = "sbilifeco-boundaries-llm"
-version = "0.2.0"
+name = "sbilifeco-boundary-llm"
+version = "0.3.0"
 description = "description"
 dependencies = [
     "pydantic>=2.11.5",

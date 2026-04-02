@@ -3,15 +3,15 @@ from uuid import uuid4
 
 sys.path.append("./src")
 
-from sbilifeco.gateways.vertex import VertexAI
-from sbilifeco.gateways.vertex_gemini import VertexGemini
-
 from os import getenv
 from unittest import IsolatedAsyncioTestCase
 from dotenv import load_dotenv
 from envvars import EnvVars, Defaults
 
 # Import the necessary service(s) here
+from sbilifeco.boundaries.llm import LLMRequest
+from sbilifeco.gateways.vertex import VertexAI
+from sbilifeco.gateways.vertex_gemini import VertexGemini
 
 
 class Test(IsolatedAsyncioTestCase):
@@ -67,11 +67,12 @@ class Test(IsolatedAsyncioTestCase):
 
     async def test_streaming(self) -> None:
         # Arrange
-        request_id = uuid4().hex
-        prompt = "What is the answer to life, the universe and everything?"
+        request = LLMRequest(
+            context="What is the answer to life, the universe and everything?"
+        )
 
         # Act
-        response = await self.claude_service.generate_streamed_reply(request_id, prompt)
+        response = await self.claude_service.generate_streamed_reply(request)
 
         # Assert
         self.assertTrue(response.is_success, response.message)

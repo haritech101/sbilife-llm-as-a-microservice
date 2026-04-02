@@ -8,7 +8,7 @@ from unittest import IsolatedAsyncioTestCase
 from unittest.mock import AsyncMock, patch
 from faker import Faker
 from sbilifeco.models.base import Response
-from sbilifeco.boundaries.llm import ILLM
+from sbilifeco.boundaries.llm import ILLM, LLMRequest
 from sbilifeco.cp.llm.http_server import LLMHttpServer
 from sbilifeco.cp.llm.http_client import LLMHttpClient
 from random import randint
@@ -52,8 +52,10 @@ class LLMTest(IsolatedAsyncioTestCase):
 
     async def test_series(self) -> None:
         # Arrange
-        question = "What is the meaning of life, the universe, and everything?"
-        request_id = uuid4().hex
+        request = LLMRequest(
+            context="What is the meaning of life, the universe, and everything?"
+        )
+
         fn_stream = patch.object(
             self.llm,
             "generate_streamed_reply",
@@ -61,10 +63,10 @@ class LLMTest(IsolatedAsyncioTestCase):
         ).start()
 
         # Act
-        response = await self.client.generate_streamed_reply(request_id, question)
+        response = await self.client.generate_streamed_reply(request)
 
         # Assert
-        fn_stream.assert_called_once_with(request_id, question)
+        fn_stream.assert_called_once_with(request)
 
         # Assert
         self.assertTrue(response.is_success, response.message)
